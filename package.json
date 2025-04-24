@@ -1,7 +1,7 @@
 {
-  "name": "react-native-use-websocket",
-  "version": "0.2.6",
-  "description": "React Native Hook designed to provide robust WebSocket integrations to your Components.",
+  "name": "@soldiersacha/react-native-use-websocket",
+  "version": "0.2.8",
+  "description": "RN hook with dynamic WebSocket options (fork of Sumit1993/react-native-use-websocket).",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
   "types": "lib/typescript/src/index.d.ts",
@@ -28,18 +28,20 @@
     "android",
     "websocket",
     "socket.io",
-    "hook"
+    "hook",
+    "headers",
+    "dynamic-options"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Sumit1993/react-native-use-websocket.git"
+    "url": "git+https://github.com/SoldierSacha/react-native-use-websocket.git"
   },
-  "author": "Sumit Patel <sumitpatel.14may@gmail.com> (https://github.com/Sumit1993)",
+  "author": "Sacha Baniassad <sachabaniassad@gmail.com> (https://github.com/SoldierSacha)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Sumit1993/react-native-use-websocket/issues"
+    "url": "https://github.com/SoldierSacha/react-native-use-websocket/issues"
   },
-  "homepage": "https://github.com/Sumit1993/react-native-use-websocket#readme",
+  "homepage": "https://github.com/SoldierSacha/react-native-use-websocket#readme",
   "devDependencies": {
     "@commitlint/config-conventional": "^8.3.4",
     "@react-native-community/bob": "^0.16.2",
@@ -135,5 +137,8 @@
   "directories": {
     "example": "example",
     "lib": "lib"
+  },
+  "dependencies": {
+    "build": "^0.1.4"
   }
 }

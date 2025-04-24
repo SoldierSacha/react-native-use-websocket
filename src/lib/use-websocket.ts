@@ -1,5 +1,16 @@
-import { useEffect, useRef, useState, useCallback, useMemo, MutableRefObject } from 'react';
-import { DEFAULT_OPTIONS, ReadyState, UNPARSABLE_JSON_OBJECT } from './constants';
+import {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+  MutableRefObject,
+} from 'react';
+import {
+  DEFAULT_OPTIONS,
+  ReadyState,
+  UNPARSABLE_JSON_OBJECT,
+} from './constants';
 import { createOrJoinSocket } from './create-or-join';
 import { getUrl } from './get-url';
 import websocketWrapper from './proxy';
@@ -16,9 +27,11 @@ import type {
 export const useWebSocket = (
   url: string | (() => string | Promise<string>) | null,
   options: Options = DEFAULT_OPTIONS,
-  connect: boolean = true,
+  connect: boolean = true
 ): WebSocketHook => {
-  const [lastMessage, setLastMessage] = useState<WebSocketEventMap['message']>({});
+  const [lastMessage, setLastMessage] = useState<WebSocketEventMap['message']>(
+    {}
+  );
   const [readyState, setReadyState] = useState<ReadyStateState>({});
   const lastJsonMessage = useMemo(() => {
     if (lastMessage) {
@@ -30,41 +43,53 @@ export const useWebSocket = (
     }
     return null;
   }, [lastMessage]);
-  const convertedUrl = useRef<string>("");
+  const convertedUrl = useRef<string>('');
   const webSocketRef = useRef<WebSocket | null>(null);
-  const startRef = useRef<() => void>(() => { });
+  const startRef = useRef<() => void>(() => {});
   const reconnectCount = useRef<number>(0);
   const messageQueue = useRef<WebSocketMessage[]>([]);
-  const webSocketProxy = useRef<WebSocket | null>(null)
+  const webSocketProxy = useRef<WebSocket | null>(null);
   const optionsCache = useRef<Options>(options);
 
   const readyStateFromUrl: ReadyState =
-    convertedUrl.current && readyState[convertedUrl.current] !== undefined ?
-      readyState[convertedUrl.current] :
-      url !== null && connect === true ?
-        ReadyState.CONNECTING :
-        ReadyState.UNINSTANTIATED;
+    convertedUrl.current && readyState[convertedUrl.current] !== undefined
+      ? readyState[convertedUrl.current]
+      : url !== null && connect
+      ? ReadyState.CONNECTING
+      : ReadyState.UNINSTANTIATED;
 
-  const stringifiedQueryParams = options.queryParams ? JSON.stringify(options.queryParams) : null;
+  const stringifiedQueryParams = options.queryParams
+    ? JSON.stringify(options.queryParams)
+    : null;
 
-  const sendMessage: SendMessage = useCallback(message => {
-    if (webSocketRef.current && webSocketRef.current.readyState === ReadyState.OPEN) {
+  const sendMessage: SendMessage = useCallback((message) => {
+    if (
+      webSocketRef.current &&
+      webSocketRef.current.readyState === ReadyState.OPEN
+    ) {
       webSocketRef.current.send(message);
     } else {
       messageQueue.current.push(message);
     }
   }, []);
 
-  const sendJsonMessage: SendJsonMessage = useCallback(message => {
-    sendMessage(JSON.stringify(message));
-  }, [sendMessage]);
+  const sendJsonMessage: SendJsonMessage = useCallback(
+    (message) => {
+      sendMessage(JSON.stringify(message));
+    },
+    [sendMessage]
+  );
 
   const getWebSocket = useCallback((): WebSocket => {
     if (optionsCache.current?.share !== true && null !== webSocketRef.current) {
       return webSocketRef.current;
     }
 
-    if (webSocketProxy.current === null && webSocketRef.current && startRef.current) {
+    if (
+      webSocketProxy.current === null &&
+      webSocketRef.current &&
+      startRef.current
+    ) {
       webSocketProxy.current = websocketWrapper(webSocketRef.current, startRef);
     } else {
       return webSocketProxy.current as WebSocket;
@@ -73,15 +98,43 @@ export const useWebSocket = (
     return webSocketProxy.current;
   }, [optionsCache]);
 
+  // keep the latest options in the cache
   useEffect(() => {
-    if (url !== null && connect === true) {
+    const prev = optionsCache.current; // store old options
+    optionsCache.current = options; // update cache
+
+    /* Compare the _content_ of headers / query / protocols */
+    const headersChanged =
+      JSON.stringify(prev?.options?.headers) !==
+      JSON.stringify(options.options?.headers);
+
+    const queryChanged =
+      JSON.stringify(prev?.queryParams) !== JSON.stringify(options.queryParams);
+
+    const protocolsChanged =
+      JSON.stringify(prev?.protocols) !== JSON.stringify(options.protocols);
+
+    const shouldReconnect =
+      (headersChanged || queryChanged || protocolsChanged) &&
+      (readyStateFromUrl === ReadyState.OPEN ||
+        readyStateFromUrl === ReadyState.CLOSING);
+
+    if (shouldReconnect && startRef.current) {
+      startRef.current(); // close & reopen socket
+    }
+  }, [options, readyStateFromUrl]);
+
+  useEffect(() => {
+    if (url !== null && connect) {
       let removeListeners: () => void;
       let expectClose = false;
 
       const start = async () => {
         convertedUrl.current = await getUrl(url, optionsCache);
 
-        const protectedSetLastMessage = (message: WebSocketEventMap['message']) => {
+        const protectedSetLastMessage = (
+          message: WebSocketEventMap['message']
+        ) => {
           if (!expectClose) {
             setLastMessage(message);
           }
@@ -89,7 +142,7 @@ export const useWebSocket = (
 
         const protectedSetReadyState = (state: ReadyState) => {
           if (!expectClose) {
-            setReadyState(prev => ({
+            setReadyState((prev) => ({
               ...prev,
               [convertedUrl.current]: state,
             }));
@@ -102,7 +155,7 @@ export const useWebSocket = (
           optionsCache,
           protectedSetLastMessage,
           startRef,
-          reconnectCount,
+          reconnectCount
         );
       };
 
@@ -121,14 +174,14 @@ export const useWebSocket = (
         removeListeners?.();
         setLastMessage({});
       };
-    }else{
+    } else {
       return;
     }
   }, [url, connect, stringifiedQueryParams, optionsCache, sendMessage]);
 
   useEffect(() => {
     if (readyStateFromUrl === ReadyState.OPEN) {
-      messageQueue.current.splice(0).forEach(message => {
+      messageQueue.current.splice(0).forEach((message) => {
         sendMessage(message);
       });
     }
